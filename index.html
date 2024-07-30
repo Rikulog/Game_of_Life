@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ライフゲーム</title>
+    <style>
+        .grid {
+            display: grid;
+            gap: 1px;
+            margin: 0 auto; /* グリッドを水平中央に配置 */
+        }
+        .cell {
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border: 1px solid black;
+        }
+        .alive {
+            background-color: black;
+        }
+        /* 新しいスタイル */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <input type="number" id="gridSize" placeholder="グリッドサイズを入力" min="1" max="100">
+    <button onclick="createGrid()">グリッド作成</button>
+    <button onclick="startGame()">開始</button>
+    <button onclick="stopGame()">停止</button>
+    <button onclick="randomizeGrid(0.5)">1/2</button>
+    <button onclick="randomizeGrid(0.25)">1/4</button>
+    <div class="grid" id="grid"></div>
+
+    <script>
+        let interval;
+        let gridSize;
+        let grid;
+
+        function createGrid() {
+            gridSize = document.getElementById('gridSize').value;
+            grid = document.getElementById('grid');
+            grid.innerHTML = ''; // 既存のグリッドをクリア
+            grid.style.gridTemplateColumns = `repeat(${gridSize}, 20px)`;
+            grid.style.gridTemplateRows = `repeat(${gridSize}, 20px)`;
+
+            for (let i = 0; i < gridSize * gridSize; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.addEventListener('click', () => {
+                    cell.classList.toggle('alive');
+                });
+                grid.appendChild(cell);
+            }
+        }
+
+        function startGame() {
+            if (interval) return; // 既にゲームが開始されている場合は何もしない
+            interval = setInterval(updateGrid, 500);
+        }
+
+        function stopGame() {
+            clearInterval(interval);
+            interval = null;
+        }
+
+        function updateGrid() {
+            const cells = Array.from(grid.children);
+            const newStates = cells.map((cell, index) => {
+                const x = index % gridSize;
+                const y = Math.floor(index / gridSize);
+                const aliveNeighbors = countAliveNeighbors(x, y);
+
+                if (cell.classList.contains('alive')) {
+                    if (aliveNeighbors < 2 || aliveNeighbors > 3) {
+                        return false; // 過疎または過密で死滅
+                    }
+                    return true; // 生存
+                } else {
+                    if (aliveNeighbors === 3) {
+                        return true; // 誕生
+                    }
+                    return false; // そのまま死滅
+                }
+            });
+
+            cells.forEach((cell, index) => {
+                if (newStates[index]) {
+                    cell.classList.add('alive');
+                } else {
+                    cell.classList.remove('alive');
+                }
+            });
+        }
+
+        function countAliveNeighbors(x, y) {
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],         [0, 1],
+                [1, -1], [1, 0], [1, 1]
+            ];
+            let count = 0;
+
+            directions.forEach(([dx, dy]) => {
+                const nx = x + dx;
+                const ny = y + dy;
+                if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
+                    const neighborIndex = ny * gridSize + nx;
+                    if (grid.children[neighborIndex].classList.contains('alive')) {
+                        count++;
+                    }
+                }
+            });
+
+            return count;
+        }
+
+        function randomizeGrid(probability) {
+            const cells = Array.from(grid.children);
+            cells.forEach(cell => {
+                if (Math.random() < probability) {
+                    cell.classList.add('alive');
+                } else {
+                    cell.classList.remove('alive');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
